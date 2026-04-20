@@ -18,9 +18,12 @@
     }
     h1 {
       margin-bottom: 8px;
+      font-size: 56px;
+      line-height: 1.1;
     }
     p {
       line-height: 1.5;
+      font-size: 18px;
     }
     .controls {
       display: flex;
@@ -29,12 +32,12 @@
       margin: 20px 0 28px;
     }
     button {
-      padding: 12px 16px;
+      padding: 14px 20px;
       border: none;
-      border-radius: 10px;
-      background: #1d4ed8;
+      border-radius: 14px;
+      background: #2563eb;
       color: white;
-      font-size: 14px;
+      font-size: 18px;
       cursor: pointer;
     }
     button:hover {
@@ -44,12 +47,13 @@
       background: #475569;
     }
     .danger {
-      background: #b91c1c;
+      background: #dc2626;
     }
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
       gap: 18px;
+      margin-top: 24px;
     }
     .card {
       background: white;
@@ -58,22 +62,27 @@
       box-shadow: 0 4px 14px rgba(0,0,0,0.08);
     }
     .candidate-name {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       margin-bottom: 8px;
     }
     .role {
       color: #475569;
       margin-bottom: 16px;
+      font-size: 16px;
     }
     .section-title {
       font-weight: 700;
       margin-top: 14px;
       margin-bottom: 6px;
+      font-size: 16px;
     }
     ul {
       margin-top: 6px;
       padding-left: 20px;
+    }
+    li {
+      margin-bottom: 4px;
     }
     .score-box {
       margin-top: 18px;
@@ -110,6 +119,7 @@
       border-left: 5px solid #f59e0b;
       padding: 16px;
       border-radius: 10px;
+      font-size: 18px;
     }
     .rank {
       display: inline-block;
@@ -127,8 +137,7 @@
   <div class="container">
     <h1>AI Hiring Screening Demo</h1>
     <p>
-      Review the candidate profiles first. Then run the screening model.
-      After that, reveal how the AI made its decision.
+      Review the candidate profiles first. Then run the screening model. After that, reveal how the AI made its decision.
     </p>
 
     <div class="controls">
@@ -284,6 +293,12 @@
     let currentModel = null;
     let showExplanation = false;
     let currentResults = [];
+    let noteMessage = 'Ask first: <strong>Which 2 or 3 candidates would you shortlist?</strong>';
+
+    function setNote(message) {
+      noteMessage = message;
+      document.getElementById("note").innerHTML = noteMessage;
+    }
 
     function computeFairerScore(c) {
       return c.hidden.directFit + c.hidden.technical + c.hidden.degree - Math.min(c.hidden.careerGapPenalty, 1);
@@ -370,36 +385,42 @@
 
     function runFairerModel() {
       currentModel = "fairer";
+      showExplanation = false;
       currentResults = [...candidates]
         .map(c => ({ ...c, score: computeFairerScore(c) }))
         .sort((a, b) => b.score - a.score);
       renderCards(currentResults);
-      document.getElementById("note").innerHTML =
-        "<strong>Fairer model:</strong> This version prioritizes role fit, technical skills, and educational fit. Career pauses have only a minimal effect.";
+      setNote("<strong>Fairer model:</strong> This version prioritizes role fit, technical skills, and educational fit. Career pauses have only a minimal effect.");
     }
 
     function runBiasedModel() {
       currentModel = "biased";
+      showExplanation = false;
       currentResults = [...candidates]
         .map(c => ({ ...c, score: computeBiasedScore(c) }))
         .sort((a, b) => b.score - a.score);
       renderCards(currentResults);
-      document.getElementById("note").innerHTML =
-        "<strong>Biased model:</strong> This version still looks technical, but it quietly penalizes proxy signals such as non-linear career paths, certain activity keywords, collaborative language patterns, and historical name-pattern associations.";
+      setNote("<strong>Biased model:</strong> This version still looks technical, but it quietly penalizes proxy signals such as non-linear career paths, certain activity keywords, collaborative language patterns, and historical name-pattern associations.");
     }
 
     function toggleExplanation() {
       if (!currentModel) {
-        document.getElementById("note").innerHTML =
-          "<strong>Please run a model first.</strong> Then click again to reveal how the AI scored each candidate.";
+        setNote("<strong>Please run a model first.</strong> Then click again to reveal how the AI scored each candidate.");
         return;
       }
+
       showExplanation = !showExplanation;
       renderCards(currentResults);
-      document.getElementById("note").innerHTML =
-        showExplanation
-          ? "<strong>Now the scoring logic is visible.</strong> Notice that the biased model did not need an explicit gender field to produce unequal outcomes."
-          : document.getElementById(\"note\").innerHTML;
+
+      if (showExplanation) {
+        setNote("<strong>Now the scoring logic is visible.</strong> Notice that the biased model did not need an explicit gender field to produce unequal outcomes.");
+      } else {
+        if (currentModel === "biased") {
+          setNote("<strong>Biased model:</strong> This version still looks technical, but it quietly penalizes proxy signals such as non-linear career paths, certain activity keywords, collaborative language patterns, and historical name-pattern associations.");
+        } else {
+          setNote("<strong>Fairer model:</strong> This version prioritizes role fit, technical skills, and educational fit. Career pauses have only a minimal effect.");
+        }
+      }
     }
 
     function resetView() {
@@ -407,8 +428,7 @@
       showExplanation = false;
       currentResults = [];
       renderCards(candidates);
-      document.getElementById("note").innerHTML =
-        "Ask first: <strong>Which 2 or 3 candidates would you shortlist?</strong>";
+      setNote('Ask first: <strong>Which 2 or 3 candidates would you shortlist?</strong>');
     }
 
     resetView();
