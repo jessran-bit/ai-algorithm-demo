@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple AI Algorithm Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f7f7fb;
+      color: #222;
+    }
+    h1, h2 {
+      margin-bottom: 8px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #1f4ed8;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .score {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 12px 0;
+      color: #1f4ed8;
+    }
+    .factor {
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .bad {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .good {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .note {
+      margin-top: 20px;
+      padding: 14px;
+      background: #fff7ed;
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simple AI Algorithm Demo</h1>
+    <p>
+      This demo shows how an algorithm scores candidates.
+      Then it shows how changing the rules can create bias.
+    </p>
+
+    <div class="controls">
+      <button onclick="runBasic()">Run Basic Algorithm</button>
+      <button onclick="runBiased()">Run Biased Algorithm</button>
+      <button onclick="resetDemo()">Reset</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="note" id="note">
+      Ask the audience first: “Who looks strongest based on qualifications?”
+    </div>
+  </div>
+
+  <script>
+    const candidates = [
+      {
+        name: "Candidate A",
+        experience: 5,
+        skills: 18,
+        careerGap: 0,
+        womensOrg: false
+      },
+      {
+        name: "Candidate B",
+        experience: 5,
+        skills: 18,
+        careerGap: 0,
+        womensOrg: true
+      },
+      {
+        name: "Candidate C",
+        experience: 5,
+        skills: 18,
+        careerGap: 12,
+        womensOrg: false
+      }
+    ];
+
+    function renderCards(data, showFactors = false, factorsMap = {}) {
+      const cards = document.getElementById("cards");
+      cards.innerHTML = "";
+
+      data.forEach(candidate => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let html = `
+          <h2>${candidate.name}</h2>
+          <p><strong>Experience:</strong> ${candidate.experience} years</p>
+          <p><strong>Skills score:</strong> ${candidate.skills}</p>
+          <p><strong>Career gap:</strong> ${candidate.careerGap} months</p>
+          <p><strong>Women's organization:</strong> ${candidate.womensOrg ? "Yes" : "No"}</p>
+        `;
+
+        if (candidate.score !== undefined) {
+          html += `<div class="score">${candidate.score}</div>`;
+        }
+
+        if (showFactors && factorsMap[candidate.name]) {
+          factorsMap[candidate.name].forEach(f => {
+            html += `<div class="factor ${f.type}">${f.text}</div>`;
+          });
+        }
+
+        card.innerHTML = html;
+        cards.appendChild(card);
+      });
+    }
+
+    function runBasic() {
+      const scored = candidates.map(c => {
+        const score = (c.experience * 2) + c.skills;
+        return { ...c, score };
+      });
+
+      const factors = {
+        "Candidate A": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" }
+        ],
+        "Candidate B": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" }
+        ],
+        "Candidate C": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" }
+        ]
+      };
+
+      renderCards(scored, true, factors);
+      document.getElementById("note").innerHTML =
+        "<strong>What happened?</strong> All three candidates received the same score because the algorithm only used job-relevant factors: experience and skills.";
+    }
+
+    function runBiased() {
+      const scored = candidates.map(c => {
+        let score = (c.experience * 2) + c.skills;
+
+        if (c.womensOrg) {
+          score -= 10;
+        }
+
+        if (c.careerGap > 6) {
+          score -= 8;
+        }
+
+        return { ...c, score };
+      });
+
+      const factors = {
+        "Candidate A": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" }
+        ],
+        "Candidate B": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" },
+          { text: "-10 penalty for women's organization signal", type: "bad" }
+        ],
+        "Candidate C": [
+          { text: "+10 from experience", type: "good" },
+          { text: "+18 from skills", type: "good" },
+          { text: "-8 penalty for long career gap", type: "bad" }
+        ]
+      };
+
+      renderCards(scored, true, factors);
+      document.getElementById("note").innerHTML =
+        "<strong>What changed?</strong> The algorithm now uses extra rules. These rules are not directly measuring job ability, but they still affect the result. This is how algorithmic bias can happen.";
+    }
+
+    function resetDemo() {
+      renderCards(candidates, false, {});
+      document.getElementById("note").innerHTML =
+        "Ask the audience first: “Who looks strongest based on qualifications?”";
+    }
+
+    renderCards(candidates);
+  </script>
+</body>
+</html>
