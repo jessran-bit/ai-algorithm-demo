@@ -3,152 +3,364 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple AI Algorithm Demo</title>
+  <title>AI Hiring Bias Demo</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 24px;
-      background: #f7f7fb;
-      color: #222;
-    }
-    h1, h2 {
-      margin-bottom: 8px;
+      background: #f3f4f6;
+      color: #1f2937;
     }
     .container {
-      max-width: 1000px;
+      max-width: 1300px;
       margin: auto;
     }
+    h1 {
+      margin-bottom: 8px;
+    }
+    p {
+      line-height: 1.5;
+    }
     .controls {
-      margin: 20px 0;
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+      margin: 20px 0 28px;
     }
     button {
-      padding: 10px 16px;
+      padding: 12px 16px;
       border: none;
-      border-radius: 8px;
-      background: #1f4ed8;
+      border-radius: 10px;
+      background: #1d4ed8;
       color: white;
-      cursor: pointer;
       font-size: 14px;
+      cursor: pointer;
     }
     button:hover {
-      opacity: 0.9;
+      opacity: 0.92;
+    }
+    .secondary {
+      background: #475569;
+    }
+    .danger {
+      background: #b91c1c;
     }
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 18px;
     }
     .card {
       background: white;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    .candidate-name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .role {
+      color: #475569;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-weight: 700;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    ul {
+      margin-top: 6px;
+      padding-left: 20px;
+    }
+    .score-box {
+      margin-top: 18px;
+      padding: 14px;
       border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      background: #eff6ff;
+      font-weight: 700;
+      font-size: 18px;
     }
-    .score {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 12px 0;
-      color: #1f4ed8;
-    }
-    .factor {
-      background: #f1f5f9;
-      padding: 8px;
-      border-radius: 8px;
-      margin-top: 8px;
+    .explain {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
       font-size: 14px;
-    }
-    .bad {
-      background: #fee2e2;
-      color: #991b1b;
     }
     .good {
       background: #dcfce7;
       color: #166534;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .bad {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 8px;
     }
     .note {
-      margin-top: 20px;
-      padding: 14px;
+      margin: 22px 0;
       background: #fff7ed;
-      border-left: 4px solid #f59e0b;
-      border-radius: 8px;
+      border-left: 5px solid #f59e0b;
+      padding: 16px;
+      border-radius: 10px;
+    }
+    .rank {
+      display: inline-block;
+      margin-top: 10px;
+      background: #111827;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Simple AI Algorithm Demo</h1>
+    <h1>AI Hiring Screening Demo</h1>
     <p>
-      This demo shows how an algorithm scores candidates.
-      Then it shows how changing the rules can create bias.
+      Review the candidate profiles first. Then run the screening model.
+      After that, reveal how the AI made its decision.
     </p>
 
     <div class="controls">
-      <button onclick="runBasic()">Run Basic Algorithm</button>
-      <button onclick="runBiased()">Run Biased Algorithm</button>
-      <button onclick="resetDemo()">Reset</button>
+      <button onclick="resetView()">Reset</button>
+      <button onclick="runFairerModel()">Run Fairer Model</button>
+      <button class="danger" onclick="runBiasedModel()">Run Biased Model</button>
+      <button class="secondary" onclick="toggleExplanation()">Reveal Why the AI Ranked Them This Way</button>
+    </div>
+
+    <div class="note" id="note">
+      Ask first: <strong>Which 2 or 3 candidates would you shortlist?</strong>
     </div>
 
     <div class="cards" id="cards"></div>
-
-    <div class="note" id="note">
-      Ask the audience first: “Who looks strongest based on qualifications?”
-    </div>
   </div>
 
   <script>
     const candidates = [
       {
-        name: "Candidate A",
-        experience: 5,
-        skills: 18,
-        careerGap: 0,
-        womensOrg: false
+        name: "Alex Reyes",
+        role: "Business Analyst",
+        totalExperience: "5 years total",
+        background: [
+          "3 years in operations analytics",
+          "2 years in process improvement"
+        ],
+        education: "BS Industrial Engineering",
+        skills: ["SQL", "Excel", "Power BI", "Process mapping", "Dashboard reporting"],
+        activities: ["Member, Analytics Society", "Volunteer tutor for quantitative methods"],
+        timeline: "Continuous employment",
+        hidden: {
+          directFit: 10,
+          technical: 9,
+          degree: 4,
+          careerGapPenalty: 0,
+          orgPenalty: 0,
+          languagePenalty: 0,
+          namePenalty: 0
+        }
       },
       {
-        name: "Candidate B",
-        experience: 5,
-        skills: 18,
-        careerGap: 0,
-        womensOrg: true
+        name: "Sam Rivera",
+        role: "Business Analyst",
+        totalExperience: "5 years total",
+        background: [
+          "3 years in business analytics",
+          "2 years in project coordination"
+        ],
+        education: "BS Management Engineering",
+        skills: ["SQL", "Excel", "Power BI", "Stakeholder coordination", "Process documentation"],
+        activities: ["Board member, Women in Data Leadership Network", "Mentor, Young Professionals Circle"],
+        timeline: "Continuous employment",
+        hidden: {
+          directFit: 10,
+          technical: 9,
+          degree: 4,
+          careerGapPenalty: 0,
+          orgPenalty: 4,
+          languagePenalty: 3,
+          namePenalty: 2
+        }
       },
       {
-        name: "Candidate C",
-        experience: 5,
-        skills: 18,
-        careerGap: 12,
-        womensOrg: false
+        name: "Jordan Lim",
+        role: "Business Analyst",
+        totalExperience: "5 years total",
+        background: [
+          "4 years in reporting and insights",
+          "1 year in client support"
+        ],
+        education: "BS Information Systems",
+        skills: ["Excel", "Tableau", "Data visualization", "Reporting", "Presentation design"],
+        activities: ["Volunteer mentor, Community Career Hub"],
+        timeline: "10-month career break in 2022, then returned to full-time work",
+        hidden: {
+          directFit: 8,
+          technical: 7,
+          degree: 4,
+          careerGapPenalty: 6,
+          orgPenalty: 4,
+          languagePenalty: 1,
+          namePenalty: 0
+        }
+      },
+      {
+        name: "Taylor Cruz",
+        role: "Business Analyst",
+        totalExperience: "6 years total",
+        background: [
+          "4 years in market research",
+          "2 years in business reporting"
+        ],
+        education: "BS Statistics",
+        skills: ["Python", "Excel", "Forecasting", "Research design", "Data visualization"],
+        activities: ["Member, Research Professionals Circle"],
+        timeline: "Continuous employment",
+        hidden: {
+          directFit: 9,
+          technical: 8,
+          degree: 4,
+          careerGapPenalty: 0,
+          orgPenalty: 0,
+          languagePenalty: 0,
+          namePenalty: 0
+        }
+      },
+      {
+        name: "Morgan Santos",
+        role: "Business Analyst",
+        totalExperience: "5 years total",
+        background: [
+          "2 years in operations analytics",
+          "3 years in administrative coordination"
+        ],
+        education: "BS Business Administration",
+        skills: ["Excel", "PowerPoint", "Reporting", "Scheduling", "Team coordination"],
+        activities: ["Member, Inclusive Leadership Forum"],
+        timeline: "Continuous employment",
+        hidden: {
+          directFit: 6,
+          technical: 4,
+          degree: 2,
+          careerGapPenalty: 0,
+          orgPenalty: 4,
+          languagePenalty: 3,
+          namePenalty: 0
+        }
+      },
+      {
+        name: "Casey Tan",
+        role: "Business Analyst",
+        totalExperience: "5 years total",
+        background: [
+          "3 years in business intelligence",
+          "2 years in customer insights"
+        ],
+        education: "BS Applied Mathematics",
+        skills: ["SQL", "Power BI", "Data cleaning", "KPI tracking", "Trend analysis"],
+        activities: ["Member, University Data Science Association"],
+        timeline: "8-month career pause for family care, then returned to full-time work",
+        hidden: {
+          directFit: 10,
+          technical: 9,
+          degree: 4,
+          careerGapPenalty: 6,
+          orgPenalty: 0,
+          languagePenalty: 0,
+          namePenalty: 0
+        }
       }
     ];
 
-    function renderCards(data, showFactors = false, factorsMap = {}) {
+    let currentModel = null;
+    let showExplanation = false;
+    let currentResults = [];
+
+    function computeFairerScore(c) {
+      return c.hidden.directFit + c.hidden.technical + c.hidden.degree - Math.min(c.hidden.careerGapPenalty, 1);
+    }
+
+    function computeBiasedScore(c) {
+      return c.hidden.directFit + c.hidden.technical + c.hidden.degree
+        - c.hidden.careerGapPenalty
+        - c.hidden.orgPenalty
+        - c.hidden.languagePenalty
+        - c.hidden.namePenalty;
+    }
+
+    function buildExplanation(candidate) {
+      const blocks = [];
+      blocks.push(`<div class="good">+ ${candidate.hidden.directFit} points for role-relevant experience</div>`);
+      blocks.push(`<div class="good">+ ${candidate.hidden.technical} points for technical skills</div>`);
+      blocks.push(`<div class="good">+ ${candidate.hidden.degree} points for educational fit</div>`);
+
+      if (currentModel === "biased") {
+        if (candidate.hidden.careerGapPenalty > 0) {
+          blocks.push(`<div class="bad">- ${candidate.hidden.careerGapPenalty} points for non-linear career timeline</div>`);
+        }
+        if (candidate.hidden.orgPenalty > 0) {
+          blocks.push(`<div class="bad">- ${candidate.hidden.orgPenalty} points for activity keyword pattern</div>`);
+        }
+        if (candidate.hidden.languagePenalty > 0) {
+          blocks.push(`<div class="bad">- ${candidate.hidden.languagePenalty} points for collaborative language pattern</div>`);
+        }
+        if (candidate.hidden.namePenalty > 0) {
+          blocks.push(`<div class="bad">- ${candidate.hidden.namePenalty} points for historical name-pattern association</div>`);
+        }
+      } else if (currentModel === "fairer") {
+        if (candidate.hidden.careerGapPenalty > 0) {
+          blocks.push(`<div class="good">Only a very small adjustment was made for a career pause</div>`);
+        }
+      }
+
+      return blocks.join("");
+    }
+
+    function renderCards(list) {
       const cards = document.getElementById("cards");
       cards.innerHTML = "";
 
-      data.forEach(candidate => {
+      list.forEach((c, index) => {
         const card = document.createElement("div");
         card.className = "card";
 
         let html = `
-          <h2>${candidate.name}</h2>
-          <p><strong>Experience:</strong> ${candidate.experience} years</p>
-          <p><strong>Skills score:</strong> ${candidate.skills}</p>
-          <p><strong>Career gap:</strong> ${candidate.careerGap} months</p>
-          <p><strong>Women's organization:</strong> ${candidate.womensOrg ? "Yes" : "No"}</p>
+          <div class="candidate-name">${c.name}</div>
+          <div class="role">Applying for: ${c.role}</div>
+
+          <div class="section-title">Experience</div>
+          <div>${c.totalExperience}</div>
+          <ul>${c.background.map(item => `<li>${item}</li>`).join("")}</ul>
+
+          <div class="section-title">Education</div>
+          <div>${c.education}</div>
+
+          <div class="section-title">Skills</div>
+          <ul>${c.skills.map(skill => `<li>${skill}</li>`).join("")}</ul>
+
+          <div class="section-title">Leadership and Activities</div>
+          <ul>${c.activities.map(item => `<li>${item}</li>`).join("")}</ul>
+
+          <div class="section-title">Career Timeline</div>
+          <div>${c.timeline}</div>
         `;
 
-        if (candidate.score !== undefined) {
-          html += `<div class="score">${candidate.score}</div>`;
+        if (c.score !== undefined) {
+          html += `<div class="score-box">AI Score: ${c.score}</div>`;
+          html += `<div class="rank">Rank #${index + 1}</div>`;
         }
 
-        if (showFactors && factorsMap[candidate.name]) {
-          factorsMap[candidate.name].forEach(f => {
-            html += `<div class="factor ${f.type}">${f.text}</div>`;
-          });
+        if (showExplanation && c.score !== undefined) {
+          html += `<div class="explain">${buildExplanation(c)}</div>`;
         }
 
         card.innerHTML = html;
@@ -156,76 +368,50 @@
       });
     }
 
-    function runBasic() {
-      const scored = candidates.map(c => {
-        const score = (c.experience * 2) + c.skills;
-        return { ...c, score };
-      });
-
-      const factors = {
-        "Candidate A": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" }
-        ],
-        "Candidate B": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" }
-        ],
-        "Candidate C": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" }
-        ]
-      };
-
-      renderCards(scored, true, factors);
+    function runFairerModel() {
+      currentModel = "fairer";
+      currentResults = [...candidates]
+        .map(c => ({ ...c, score: computeFairerScore(c) }))
+        .sort((a, b) => b.score - a.score);
+      renderCards(currentResults);
       document.getElementById("note").innerHTML =
-        "<strong>What happened?</strong> All three candidates received the same score because the algorithm only used job-relevant factors: experience and skills.";
+        "<strong>Fairer model:</strong> This version prioritizes role fit, technical skills, and educational fit. Career pauses have only a minimal effect.";
     }
 
-    function runBiased() {
-      const scored = candidates.map(c => {
-        let score = (c.experience * 2) + c.skills;
-
-        if (c.womensOrg) {
-          score -= 10;
-        }
-
-        if (c.careerGap > 6) {
-          score -= 8;
-        }
-
-        return { ...c, score };
-      });
-
-      const factors = {
-        "Candidate A": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" }
-        ],
-        "Candidate B": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" },
-          { text: "-10 penalty for women's organization signal", type: "bad" }
-        ],
-        "Candidate C": [
-          { text: "+10 from experience", type: "good" },
-          { text: "+18 from skills", type: "good" },
-          { text: "-8 penalty for long career gap", type: "bad" }
-        ]
-      };
-
-      renderCards(scored, true, factors);
+    function runBiasedModel() {
+      currentModel = "biased";
+      currentResults = [...candidates]
+        .map(c => ({ ...c, score: computeBiasedScore(c) }))
+        .sort((a, b) => b.score - a.score);
+      renderCards(currentResults);
       document.getElementById("note").innerHTML =
-        "<strong>What changed?</strong> The algorithm now uses extra rules. These rules are not directly measuring job ability, but they still affect the result. This is how algorithmic bias can happen.";
+        "<strong>Biased model:</strong> This version still looks technical, but it quietly penalizes proxy signals such as non-linear career paths, certain activity keywords, collaborative language patterns, and historical name-pattern associations.";
     }
 
-    function resetDemo() {
-      renderCards(candidates, false, {});
+    function toggleExplanation() {
+      if (!currentModel) {
+        document.getElementById("note").innerHTML =
+          "<strong>Please run a model first.</strong> Then click again to reveal how the AI scored each candidate.";
+        return;
+      }
+      showExplanation = !showExplanation;
+      renderCards(currentResults);
       document.getElementById("note").innerHTML =
-        "Ask the audience first: “Who looks strongest based on qualifications?”";
+        showExplanation
+          ? "<strong>Now the scoring logic is visible.</strong> Notice that the biased model did not need an explicit gender field to produce unequal outcomes."
+          : document.getElementById(\"note\").innerHTML;
     }
 
-    renderCards(candidates);
+    function resetView() {
+      currentModel = null;
+      showExplanation = false;
+      currentResults = [];
+      renderCards(candidates);
+      document.getElementById("note").innerHTML =
+        "Ask first: <strong>Which 2 or 3 candidates would you shortlist?</strong>";
+    }
+
+    resetView();
   </script>
 </body>
 </html>
